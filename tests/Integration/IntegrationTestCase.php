@@ -27,12 +27,21 @@ abstract class IntegrationTestCase extends TestCase
     {
         parent::setUp();
 
+        // Only run when a server is explicitly configured, so `phpunit` on a
+        // machine that happens to have a Meilisearch on the default port does
+        // not hit it by accident.
+        if (! env('MEILISEARCH_HOST')) {
+            $this->markTestSkipped('Set MEILISEARCH_HOST to run the integration tests.');
+        }
+
         Meilie::resetClient();
 
         try {
-            Meilie::client()->health();
+            // getIndexes() respects the API key, so a missing or wrong key skips
+            // the suite cleanly instead of failing every test with an auth error.
+            Meilie::client()->getIndexes();
         } catch (\Throwable $e) {
-            $this->markTestSkipped('Meilisearch is not reachable: ' . $e->getMessage());
+            $this->markTestSkipped('Meilisearch is not reachable or not authorized: ' . $e->getMessage());
         }
     }
 }
