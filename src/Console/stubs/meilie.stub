@@ -1,0 +1,18 @@
+<?php
+
+namespace {{ namespace }};
+
+use EduLazaro\Larameili\Meilie;
+
+class {{ class }} extends Meilie
+{
+    protected static string $index = '{{ index }}';
+
+    protected static string $primaryKey = 'id';
+
+    protected static array $searchable = [];
+
+    protected static array $filterable = [];
+
+    protected static array $sortable = [];
+}
