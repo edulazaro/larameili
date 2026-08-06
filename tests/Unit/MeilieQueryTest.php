@@ -8,7 +8,7 @@ use EduLazaro\Larameili\Tests\TestCase;
 
 class MeilieQueryTest extends TestCase
 {
-    protected function query(): MeilieQuery
+    protected function meilieQuery(): MeilieQuery
     {
         return new MeilieQuery(Article::class);
     }
@@ -17,7 +17,7 @@ class MeilieQueryTest extends TestCase
     {
         $this->assertSame(
             'status = "published"',
-            $this->query()->where('status', 'published')->compile()['filter']
+            $this->meilieQuery()->where('status', 'published')->compile()['filter']
         );
     }
 
@@ -25,7 +25,7 @@ class MeilieQueryTest extends TestCase
     {
         $this->assertSame(
             'year > 2020',
-            $this->query()->where('year', '>', 2020)->compile()['filter']
+            $this->meilieQuery()->where('year', '>', 2020)->compile()['filter']
         );
     }
 
@@ -33,7 +33,7 @@ class MeilieQueryTest extends TestCase
     {
         $this->assertSame(
             'author_id IN [1, 2, 3]',
-            $this->query()->whereIn('author_id', [1, 2, 3])->compile()['filter']
+            $this->meilieQuery()->whereIn('author_id', [1, 2, 3])->compile()['filter']
         );
     }
 
@@ -41,7 +41,7 @@ class MeilieQueryTest extends TestCase
     {
         $this->assertSame(
             'status != "draft"',
-            $this->query()->whereNot('status', 'draft')->compile()['filter']
+            $this->meilieQuery()->whereNot('status', 'draft')->compile()['filter']
         );
     }
 
@@ -49,13 +49,13 @@ class MeilieQueryTest extends TestCase
     {
         $this->assertSame(
             '(a = 1 OR b = 2)',
-            $this->query()->whereRaw('a = 1 OR b = 2')->compile()['filter']
+            $this->meilieQuery()->whereRaw('a = 1 OR b = 2')->compile()['filter']
         );
     }
 
     public function test_multiple_filters_joined_with_and(): void
     {
-        $filter = $this->query()
+        $filter = $this->meilieQuery()
             ->where('status', 'published')
             ->whereIn('author_id', [1, 2])
             ->compile()['filter'];
@@ -67,13 +67,13 @@ class MeilieQueryTest extends TestCase
     {
         $this->assertSame(
             ['published_at:desc'],
-            $this->query()->orderBy('published_at', 'desc')->compile()['sort']
+            $this->meilieQuery()->orderBy('published_at', 'desc')->compile()['sort']
         );
     }
 
     public function test_limit_and_offset(): void
     {
-        $compiled = $this->query()->limit(20)->offset(40)->compile();
+        $compiled = $this->meilieQuery()->limit(20)->offset(40)->compile();
 
         $this->assertSame(20, $compiled['limit']);
         $this->assertSame(40, $compiled['offset']);
@@ -81,7 +81,7 @@ class MeilieQueryTest extends TestCase
 
     public function test_semantic_sets_hybrid(): void
     {
-        $hybrid = $this->query()->semantic(0.5)->compile()['hybrid'];
+        $hybrid = $this->meilieQuery()->semantic(0.5)->compile()['hybrid'];
 
         $this->assertSame(0.5, $hybrid['semanticRatio']);
         $this->assertSame('default', $hybrid['embedder']);
@@ -91,20 +91,20 @@ class MeilieQueryTest extends TestCase
     {
         $this->assertSame(
             'featured = true',
-            $this->query()->where('featured', true)->compile()['filter']
+            $this->meilieQuery()->where('featured', true)->compile()['filter']
         );
     }
 
     public function test_empty_query_compiles_to_empty_options(): void
     {
-        $this->assertSame([], $this->query()->compile());
+        $this->assertSame([], $this->meilieQuery()->compile());
     }
 
     public function test_near_compiles_geo_radius(): void
     {
         $this->assertSame(
             '_geoRadius(41.38, 2.17, 5000)',
-            $this->query()->near(41.38, 2.17, 5000)->compile()['filter']
+            $this->meilieQuery()->near(41.38, 2.17, 5000)->compile()['filter']
         );
     }
 
@@ -112,7 +112,7 @@ class MeilieQueryTest extends TestCase
     {
         $this->assertSame(
             ['_geoPoint(41.38, 2.17):asc'],
-            $this->query()->orderByDistance(41.38, 2.17)->compile()['sort']
+            $this->meilieQuery()->orderByDistance(41.38, 2.17)->compile()['sort']
         );
     }
 
@@ -120,7 +120,7 @@ class MeilieQueryTest extends TestCase
     {
         $this->assertSame(
             '_geoBoundingBox([41.5, 2.3], [41.3, 2.1])',
-            $this->query()->withinBox([41.5, 2.3], [41.3, 2.1])->compile()['filter']
+            $this->meilieQuery()->withinBox([41.5, 2.3], [41.3, 2.1])->compile()['filter']
         );
     }
 }

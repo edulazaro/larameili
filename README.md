@@ -14,9 +14,17 @@
 
 Laravel Scout mirrors an Eloquent model into a search index. Larameili is for the other case: documents that live in Meilisearch as their primary store, with an Active Record API on top. The two do not overlap, and you can use both.
 
+### When you want this
+
+The case it was built for is chunked text searched semantically: legal articles, documentation, transcripts, support tickets, anything you split into passages and retrieve by meaning. Those chunks have no life of their own in your relational schema. Nothing joins them, nothing updates them one by one, and the only question you ever ask is "which passages are relevant to this query, within this filter".
+
+Put them in Postgres and you own two copies of the same data plus the job of keeping them in step: a sync command, a queue worker, drift when a job fails, and a reindex script for when the embedder changes. None of that work makes the search better, because the answer still comes out of Meilisearch. Treating the index as the source of truth removes the second copy and everything written to maintain it. You keep your relational schema for the entities that deserve it, and the chunks point at them by foreign key ([Relations to Eloquent models](#relations-to-eloquent-models)).
+
+The trade is real and worth stating: no transactions, no joins, no constraints. For chunks that is not a loss. For orders and invoices it would be, so leave those in your database.
+
 ## Requirements
 
-- PHP 8.2+ and Laravel 10, 11 or 12.
+- PHP 8.4+ and Laravel 11, 12 or 13.
 - A Meilisearch server. The core (documents, filtering, sorting, pagination, geo) works on Meilisearch 1.x. Hybrid search (`semantic()`) needs the version where vector search is stable, Meilisearch 1.10 or newer.
 
 ## Installation
@@ -155,9 +163,9 @@ $result->getFacetDistribution();
 $result->getEstimatedTotalHits();
 ```
 
-### Hybrid (vector) search
+## Hybrid search
 
-If the index has an embedder, `semantic()` enables hybrid search. The ratio is `0` for keyword-only and `1` for vector-only.
+This is the part worth reading. If the index has an embedder, `semantic()` turns the query into a hybrid one: Meilisearch runs the keyword search and the vector search together and fuses the rankings. The ratio is `0` for keyword-only, `1` for vector-only, and `0.5` for an even blend.
 
 ```php
 Article::query()
@@ -166,7 +174,34 @@ Article::query()
     ->search('how do I cancel a subscription');
 ```
 
-### Pagination
+Neither half is enough on its own. Keyword search misses "cancel a subscription" when the document says "terminate your plan". Vector search misses exact tokens, which is exactly what invoice numbers, article references, error codes and proper nouns are. Hybrid retrieves both, so a query that mixes a code and a paraphrase still lands.
+
+The ratio is the knob. Lean towards `0.2` when your users type identifiers and exact phrases, towards `0.8` for natural-language questions, and start at `0.5` when you do not know yet. It is per query, so a search box and a RAG retriever can use the same index with different ratios.
+
+### The whole retrieval step in one query
+
+Filters, hybrid ranking and the hop back into your database compose, so what is usually a retrieval pipeline is one statement:
+
+```php
+$chunks = LawChunk::query()
+    ->where('territorial_scope', 'es')     // hard filter, pre-search
+    ->where('year', '>=', 2020)
+    ->semantic(0.7)                        // ranked by meaning
+    ->with('law')                          // one Eloquent query for every hit
+    ->limit(8)
+    ->search($question);
+
+foreach ($chunks as $chunk) {
+    $chunk->text;         // what you put in the prompt
+    $chunk->law->title;   // the citation, from your database
+}
+```
+
+The filters are applied by the engine before ranking, so scoping to a tenant, a language or a date range costs nothing and cannot leak. `with()` batches every hit's foreign key into a single Eloquent query, which is what keeps citations cheap: the passage comes from Meilisearch, the entity it belongs to comes from your database, and there is no N+1 in between.
+
+Declare the embedder on the model in `$embedders` and run `meili:sync` to push it. Meilisearch generates and stores the vectors, so nothing in your application queues embedding jobs or holds an embedding client.
+
+## Pagination
 
 `paginate()` returns a Laravel `LengthAwarePaginator`, so `->links()` and the rest of the paginator API work in Blade. It uses Meilisearch's page mode, which reports an exact total.
 
@@ -180,7 +215,7 @@ $articles->total();   // exact
 $articles->links();   // in a Blade view
 ```
 
-### Geo search
+## Geo search
 
 Set `protected static bool $geo = true;` on the model and `meili:sync` adds `_geo` to the filterable and sortable attributes for you. Store the point on each document with `setGeo()`.
 

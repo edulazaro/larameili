@@ -1,25 +1,107 @@
-name: tests
+name: Tests
 
 on:
   push:
     branches: [main, master]
   pull_request:
+  schedule:
+    # Weekly run, so a new Laravel or PHP release that breaks the package
+    # shows up here instead of in someone's application.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 jobs:
-  unit:
+  matrix:
     runs-on: ubuntu-latest
+    name: Resolve matrix
+    outputs:
+      matrix: ${{ steps.resolve.outputs.matrix }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Resolve supported PHP and Laravel versions
+        id: resolve
+        run: |
+          php -r '
+            $minLaravel = 11;
+
+            // The floor comes from the package itself, so bumping composer.json
+            // is enough and this workflow never has to be edited alongside it.
+            $composer = json_decode(file_get_contents("composer.json"), true);
+            preg_match("/(\d+\.\d+)/", $composer["require"]["php"], $m);
+            $packageMinPhp = $m[1] ?? "8.4";
+
+            // Every PHP branch still receiving releases, straight from php.net.
+            // A new minor shows up here on its own, an EOL one drops off.
+            $active = json_decode(file_get_contents("https://www.php.net/releases/active.php?json=1"), true);
+            $phpVersions = array_keys($active[8] ?? []);
+            sort($phpVersions);
+
+            // Every Laravel major from $minLaravel up, with the PHP it requires.
+            $releases = json_decode(file_get_contents("https://repo.packagist.org/p2/laravel/framework.json"), true);
+            $majors = [];
+            foreach ($releases["packages"]["laravel/framework"] as $release) {
+                if (str_contains($release["version"], "-")) {
+                    continue;
+                }
+                if (! preg_match("/^v(\d+)\./", $release["version"], $m)) {
+                    continue;
+                }
+                $major = (int) $m[1];
+                if ($major < $minLaravel || isset($majors[$major])) {
+                    continue;
+                }
+                $majors[$major] = $release["require"]["php"] ?? "^8.0";
+            }
+            ksort($majors);
+
+            $include = [];
+            foreach ($majors as $major => $phpConstraint) {
+                preg_match("/(\d+\.\d+)/", $phpConstraint, $m);
+                $minPhp = $m[1] ?? "8.0";
+
+                // Laravel 11 accepts PHP 8.2, but this package does not, so the
+                // stricter of the two floors wins.
+                if (version_compare($packageMinPhp, $minPhp, ">")) {
+                    $minPhp = $packageMinPhp;
+                }
+
+                foreach ($phpVersions as $php) {
+                    if (version_compare($php, $minPhp, "<")) {
+                        continue;
+                    }
+
+                    $include[] = [
+                        "php" => $php,
+                        "laravel" => "{$major}.*",
+                        // Testbench majors track Laravel majors two behind:
+                        // Laravel 11 to Testbench 9, 12 to 10, 13 to 11.
+                        "testbench" => ($major - 2) . ".*",
+                    ];
+                }
+            }
+
+            file_put_contents(getenv("GITHUB_OUTPUT"), "matrix=" . json_encode(["include" => $include]) . PHP_EOL, FILE_APPEND);
+
+            fwrite(STDERR, count($include) . " combinations: " . json_encode($include, JSON_PRETTY_PRINT) . PHP_EOL);
+          '
+
+  unit:
+    needs: matrix
+    runs-on: ubuntu-latest
+    name: unit / PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
 
     strategy:
       fail-fast: false
-      matrix:
-        php: ['8.2', '8.3', '8.4']
-        testbench: ['^8.0', '^9.0', '^10.0']
-        exclude:
-          # Laravel 10 (testbench 8) does not support PHP 8.4.
-          - php: '8.4'
-            testbench: '^8.0'
-
-    name: unit / PHP ${{ matrix.php }} - Testbench ${{ matrix.testbench }}
+      matrix: ${{ fromJSON(needs.matrix.outputs.matrix) }}
 
     steps:
       - name: Checkout
@@ -34,7 +116,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer require "orchestra/testbench:${{ matrix.testbench }}" --dev --no-update --no-interaction
+          composer require "laravel/framework:${{ matrix.laravel }}" --dev --no-interaction --no-update
+          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
           composer update --prefer-dist --prefer-stable --no-interaction --no-progress --with-all-dependencies
 
       - name: Run unit tests
@@ -42,7 +125,6 @@ jobs:
 
   integration:
     runs-on: ubuntu-latest
-
     name: integration / Meilisearch
 
     services:
@@ -65,7 +147,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: mbstring, json, curl
           coverage: none
 
@@ -81,3 +163,37 @@ jobs:
 
       - name: Run integration tests
         run: vendor/bin/phpunit --testsuite integration
+
+  next:
+    # Early warning for what is not released yet: the PHP master branch and
+    # the next Laravel. Reported, never blocking.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    name: ${{ matrix.name }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: 'PHP nightly'
+            php: 'nightly'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, json, curl
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer config minimum-stability dev
+          composer config prefer-stable true
+          composer update --prefer-dist --no-interaction --no-progress --with-all-dependencies --ignore-platform-req=php+
+
+      - name: Run unit tests
+        run: vendor/bin/phpunit --testsuite unit
