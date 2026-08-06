@@ -2,8 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
+    branches: [main]
   schedule:
     # Weekly run, so a new Laravel or PHP release that breaks the package
     # shows up here instead of in someone's application.
@@ -31,16 +32,15 @@ jobs:
         id: resolve
         run: |
           php -r '
-            $minLaravel = 11;
+            $minLaravel = 12;
 
-            // The floor comes from the package itself, so bumping composer.json
-            // is enough and this workflow never has to be edited alongside it.
+            // The PHP floor comes from the package itself, so bumping
+            // composer.json is enough and this workflow never has to change.
             $composer = json_decode(file_get_contents("composer.json"), true);
             preg_match("/(\d+\.\d+)/", $composer["require"]["php"], $m);
             $packageMinPhp = $m[1] ?? "8.4";
 
             // Every PHP branch still receiving releases, straight from php.net.
-            // A new minor shows up here on its own, an EOL one drops off.
             $active = json_decode(file_get_contents("https://www.php.net/releases/active.php?json=1"), true);
             $phpVersions = array_keys($active[8] ?? []);
             sort($phpVersions);
@@ -68,8 +68,7 @@ jobs:
                 preg_match("/(\d+\.\d+)/", $phpConstraint, $m);
                 $minPhp = $m[1] ?? "8.0";
 
-                // Laravel 11 accepts PHP 8.2, but this package does not, so the
-                // stricter of the two floors wins.
+                // The stricter of the Laravel floor and the package floor wins.
                 if (version_compare($packageMinPhp, $minPhp, ">")) {
                     $minPhp = $packageMinPhp;
                 }
@@ -97,7 +96,7 @@ jobs:
   unit:
     needs: matrix
     runs-on: ubuntu-latest
-    name: unit / PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
+    name: unit / PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
 
     strategy:
       fail-fast: false
@@ -111,14 +110,21 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, json, curl
+          extensions: dom, curl, libxml, mbstring, zip
           coverage: none
 
       - name: Install dependencies
         run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" --dev --no-interaction --no-update
+          # Older Laravel majors carry open security advisories and newer
+          # Composer refuses to install them, but CI has to resolve every major
+          # the package supports. Written straight into composer.json so it
+          # works whatever Composer version the runner ships.
+          php -r '$c = json_decode(file_get_contents("composer.json"), true);
+                  $c["config"]["policy"]["advisories"]["block"] = false;
+                  file_put_contents("composer.json", json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));'
+          composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
           composer require --dev "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-          composer update --prefer-dist --prefer-stable --no-interaction --no-progress --with-all-dependencies
+          composer update --prefer-dist --no-interaction --no-progress --with-all-dependencies
 
       - name: Run unit tests
         run: vendor/bin/phpunit --testsuite unit
@@ -148,11 +154,15 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, json, curl
+          extensions: dom, curl, libxml, mbstring, zip
           coverage: none
 
       - name: Install dependencies
-        run: composer update --prefer-dist --prefer-stable --no-interaction --no-progress
+        run: |
+          php -r '$c = json_decode(file_get_contents("composer.json"), true);
+                  $c["config"]["policy"]["advisories"]["block"] = false;
+                  file_put_contents("composer.json", json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));'
+          composer update --prefer-dist --no-interaction --no-progress --with-all-dependencies
 
       - name: Wait for Meilisearch
         run: |
@@ -165,8 +175,8 @@ jobs:
         run: vendor/bin/phpunit --testsuite integration
 
   next:
-    # Early warning for what is not released yet: the PHP master branch and
-    # the next Laravel. Reported, never blocking.
+    # Early warning for what is not released yet: the PHP master branch and the
+    # next Laravel. Reported, never blocking.
     runs-on: ubuntu-latest
     continue-on-error: true
     name: ${{ matrix.name }}
@@ -177,6 +187,7 @@ jobs:
         include:
           - name: 'PHP nightly'
             php: 'nightly'
+            laravel: ''
 
     steps:
       - name: Checkout
@@ -186,13 +197,19 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, json, curl
+          extensions: dom, curl, libxml, mbstring, zip
           coverage: none
 
       - name: Install dependencies
         run: |
+          php -r '$c = json_decode(file_get_contents("composer.json"), true);
+                  $c["config"]["policy"]["advisories"]["block"] = false;
+                  file_put_contents("composer.json", json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));'
           composer config minimum-stability dev
           composer config prefer-stable true
+          if [ -n "${{ matrix.laravel }}" ]; then
+            composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
+          fi
           composer update --prefer-dist --no-interaction --no-progress --with-all-dependencies --ignore-platform-req=php+
 
       - name: Run unit tests
