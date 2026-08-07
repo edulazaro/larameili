@@ -2,9 +2,9 @@
 
 namespace EduLazaro\Larameili\Tests\Fixtures;
 
-use EduLazaro\Larameili\Meilie;
+use EduLazaro\Larameili\Meili;
 
-class Product extends Meilie
+class Product extends Meili
 {
     protected static string $index = 'products';
 

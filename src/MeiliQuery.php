@@ -8,7 +8,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 
 /**
- * Fluent query builder for a Meilie model. It compiles where()/orderBy()/...
+ * Fluent query builder for a Meili model. It compiles where()/orderBy()/...
  * into Meilisearch search parameters and hydrates the hits back into model
  * instances.
  *
@@ -20,9 +20,9 @@ use Illuminate\Support\Collection;
  *       ->limit(20)
  *       ->search('vector search');
  */
-class MeilieQuery
+class MeiliQuery
 {
-    /** @var class-string<Meilie> */
+    /** @var class-string<Meili> */
     protected string $model;
 
     /** @var list<string> */
@@ -40,7 +40,7 @@ class MeilieQuery
     protected array $with = [];
 
     /**
-     * @param class-string<Meilie> $model
+     * @param class-string<Meili> $model
      */
     public function __construct(string $model)
     {
@@ -106,7 +106,7 @@ class MeilieQuery
     }
 
     // ------------------------------------------------------------------
-    // Geo (documents need a `_geo` field; see Meilie::$geo)
+    // Geo (documents need a `_geo` field; see Meili::$geo)
     // ------------------------------------------------------------------
 
     /** Restrict results to within $meters of a point. */
@@ -214,7 +214,7 @@ class MeilieQuery
     /**
      * Run the search and return hydrated models.
      *
-     * @return Collection<int, Meilie>
+     * @return Collection<int, Meili>
      */
     public function search(string $query = ''): Collection
     {
@@ -228,7 +228,7 @@ class MeilieQuery
     /**
      * Alias of search('') for a pure filter/browse query.
      *
-     * @return Collection<int, Meilie>
+     * @return Collection<int, Meili>
      */
     public function get(): Collection
     {
@@ -236,7 +236,7 @@ class MeilieQuery
     }
 
     /** The first matching model, or null. */
-    public function first(string $query = ''): ?Meilie
+    public function first(string $query = ''): ?Meili
     {
         return $this->limit(1)->search($query)->first();
     }

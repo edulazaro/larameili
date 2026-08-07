@@ -24,7 +24,7 @@ The trade is real and worth stating: no transactions, no joins, no constraints. 
 
 ## Requirements
 
-- PHP 8.4+ and Laravel 11, 12 or 13.
+- PHP 8.2+ and Laravel 12 or 13.
 - A Meilisearch server. The core (documents, filtering, sorting, pagination, geo) works on Meilisearch 1.x. Hybrid search (`semantic()`) needs the version where vector search is stable, Meilisearch 1.10 or newer.
 
 ## Installation
@@ -48,7 +48,7 @@ A model maps to one index. Declare the index name, the primary key if it is not 
 ```php
 namespace App\Meili;
 
-use EduLazaro\Larameili\Meilie;
+use EduLazaro\Larameili\Meili;
 
 /**
  * @property string $id
@@ -56,7 +56,7 @@ use EduLazaro\Larameili\Meilie;
  * @property string $status
  * @property int    $author_id
  */
-class Article extends Meilie
+class Article extends Meili
 {
     protected static string $index = 'articles';
 
@@ -71,7 +71,7 @@ class Article extends Meilie
 Generate one with the artisan command, which fills the index name from the class:
 
 ```bash
-php artisan make:meilie Article
+php artisan make:meili Article
 ```
 
 ## Push the settings
@@ -117,7 +117,7 @@ Article::all(limit: 50);              // browse without searching
 Meilisearch returns raw JSON, so a `$casts` map turns attributes back into the types you want as you read them: dates into `Carbon`, JSON into arrays, strings into backed enums.
 
 ```php
-class Article extends Meilie
+class Article extends Meili
 {
     protected static array $casts = [
         'published_at' => 'datetime',
@@ -257,10 +257,10 @@ Article::truncate();                    // empty the index
 Meilisearch has no joins, so relations are resolvers, not joins: a document holds a foreign key, and the package looks the Eloquent model up by it. Declare one with `belongsToEloquent` on the model, typed `: BelongsToEloquent`.
 
 ```php
-use EduLazaro\Larameili\Meilie;
+use EduLazaro\Larameili\Meili;
 use EduLazaro\Larameili\Relations\BelongsToEloquent;
 
-class LawChunk extends Meilie
+class LawChunk extends Meili
 {
     protected static string $index = 'law_chunks';
 

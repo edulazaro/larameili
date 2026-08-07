@@ -2,7 +2,7 @@
 
 namespace EduLazaro\Larameili;
 
-use EduLazaro\Larameili\Console\MakeMeilieCommand;
+use EduLazaro\Larameili\Console\MakeMeiliCommand;
 use EduLazaro\Larameili\Console\SyncCommand;
 use Illuminate\Support\ServiceProvider;
 
@@ -28,7 +28,7 @@ class LarameiliServiceProvider extends ServiceProvider
 
             $this->commands([
                 SyncCommand::class,
-                MakeMeilieCommand::class,
+                MakeMeiliCommand::class,
             ]);
         }
     }

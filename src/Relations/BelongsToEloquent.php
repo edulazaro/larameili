@@ -2,7 +2,7 @@
 
 namespace EduLazaro\Larameili\Relations;
 
-use EduLazaro\Larameili\Meilie;
+use EduLazaro\Larameili\Meili;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  * of a foreign key stored on the document, it looks the Eloquent model up by an
  * owner column. Batched via the query builder's with() to avoid N+1.
  *
- *   class LawChunk extends Meilie
+ *   class LawChunk extends Meili
  *   {
  *       public function law(): BelongsToEloquent
  *       {
@@ -26,7 +26,7 @@ class BelongsToEloquent
      * @param class-string<Model> $related
      */
     public function __construct(
-        protected Meilie $parent,
+        protected Meili $parent,
         protected string $related,
         protected string $foreignKey,
         protected string $ownerKey,

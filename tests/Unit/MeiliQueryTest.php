@@ -2,15 +2,15 @@
 
 namespace EduLazaro\Larameili\Tests\Unit;
 
-use EduLazaro\Larameili\MeilieQuery;
+use EduLazaro\Larameili\MeiliQuery;
 use EduLazaro\Larameili\Tests\Fixtures\Article;
 use EduLazaro\Larameili\Tests\TestCase;
 
-class MeilieQueryTest extends TestCase
+class MeiliQueryTest extends TestCase
 {
-    protected function meilieQuery(): MeilieQuery
+    protected function meilieQuery(): MeiliQuery
     {
-        return new MeilieQuery(Article::class);
+        return new MeiliQuery(Article::class);
     }
 
     public function test_equals_filter(): void

@@ -2,10 +2,10 @@
 
 namespace EduLazaro\Larameili\Tests\Fixtures;
 
-use EduLazaro\Larameili\Meilie;
+use EduLazaro\Larameili\Meili;
 use EduLazaro\Larameili\Relations\BelongsToEloquent;
 
-class Chunk extends Meilie
+class Chunk extends Meili
 {
     protected static string $index = 'chunks';
 

@@ -5,17 +5,17 @@ namespace EduLazaro\Larameili\Console;
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Str;
 
-class MakeMeilieCommand extends GeneratorCommand
+class MakeMeiliCommand extends GeneratorCommand
 {
-    protected $name = 'make:meilie';
+    protected $name = 'make:meili';
 
-    protected $description = 'Create a new Meilie model';
+    protected $description = 'Create a new Meili model';
 
-    protected $type = 'Meilie';
+    protected $type = 'Meili';
 
     protected function getStub(): string
     {
-        return __DIR__ . '/stubs/meilie.stub';
+        return __DIR__ . '/stubs/meili.stub';
     }
 
     protected function getDefaultNamespace($rootNamespace): string

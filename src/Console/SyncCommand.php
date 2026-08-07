@@ -2,14 +2,14 @@
 
 namespace EduLazaro\Larameili\Console;
 
-use EduLazaro\Larameili\Meilie;
+use EduLazaro\Larameili\Meili;
 use Illuminate\Console\Command;
 
 class SyncCommand extends Command
 {
-    protected $signature = 'meili:sync {model? : A single Meilie model class to sync}';
+    protected $signature = 'meili:sync {model? : A single Meili model class to sync}';
 
-    protected $description = 'Create Meilisearch indexes and push the settings declared on your Meilie models.';
+    protected $description = 'Create Meilisearch indexes and push the settings declared on your Meili models.';
 
     public function handle(): int
     {
@@ -24,8 +24,8 @@ class SyncCommand extends Command
         }
 
         foreach ($models as $model) {
-            if (! is_string($model) || ! is_subclass_of($model, Meilie::class)) {
-                $this->error("{$model} is not a " . Meilie::class . ' subclass.');
+            if (! is_string($model) || ! is_subclass_of($model, Meili::class)) {
+                $this->error("{$model} is not a " . Meili::class . ' subclass.');
 
                 continue;
             }

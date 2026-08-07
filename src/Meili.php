@@ -18,7 +18,7 @@ use Meilisearch\Exceptions\ApiException;
  * A subclass maps to one Meilisearch index and behaves like an Active Record,
  * except the backing store is a Meilisearch index rather than a SQL table:
  *
- *   class Article extends Meilie
+ *   class Article extends Meili
  *   {
  *       protected static string $index = 'articles';
  *
@@ -45,7 +45,7 @@ use Meilisearch\Exceptions\ApiException;
  *
  * @property mixed $id
  */
-abstract class Meilie
+abstract class Meili
 {
     /** Bare index name. The configured prefix is prepended unless $prefixed is false. */
     protected static string $index;
@@ -204,9 +204,9 @@ abstract class Meilie
     // ------------------------------------------------------------------
 
     /** Start a fluent query on the index. */
-    public static function query(): MeilieQuery
+    public static function query(): MeiliQuery
     {
-        return new MeilieQuery(static::class);
+        return new MeiliQuery(static::class);
     }
 
     /** Fetch a single document by primary key, or null if not found. */
@@ -297,7 +297,7 @@ abstract class Meilie
     // ------------------------------------------------------------------
 
     /**
-     * Insert or update many documents at once. Accepts arrays or Meilie
+     * Insert or update many documents at once. Accepts arrays or Meili
      * instances. For large sets prefer {@see import()}, which batches.
      */
     public static function insert(iterable $documents): ?array

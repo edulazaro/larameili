@@ -2,7 +2,7 @@
 
 namespace EduLazaro\Larameili\Tests\Integration;
 
-use EduLazaro\Larameili\Meilie;
+use EduLazaro\Larameili\Meili;
 use EduLazaro\Larameili\Tests\TestCase;
 
 /**
@@ -34,12 +34,12 @@ abstract class IntegrationTestCase extends TestCase
             $this->markTestSkipped('Set MEILISEARCH_HOST to run the integration tests.');
         }
 
-        Meilie::resetClient();
+        Meili::resetClient();
 
         try {
             // getIndexes() respects the API key, so a missing or wrong key skips
             // the suite cleanly instead of failing every test with an auth error.
-            Meilie::client()->getIndexes();
+            Meili::client()->getIndexes();
         } catch (\Throwable $e) {
             $this->markTestSkipped('Meilisearch is not reachable or not authorized: ' . $e->getMessage());
         }

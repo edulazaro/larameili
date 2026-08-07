@@ -7,7 +7,7 @@ use EduLazaro\Larameili\Tests\Fixtures\GlobalDoc;
 use EduLazaro\Larameili\Tests\Fixtures\Place;
 use EduLazaro\Larameili\Tests\TestCase;
 
-class MeilieTest extends TestCase
+class MeiliTest extends TestCase
 {
     public function test_settings_are_assembled_from_declared_properties(): void
     {

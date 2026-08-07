@@ -2,7 +2,7 @@
 
 namespace EduLazaro\Larameili\Tests\Unit;
 
-use EduLazaro\Larameili\MeilieQuery;
+use EduLazaro\Larameili\MeiliQuery;
 use EduLazaro\Larameili\Relations\BelongsToEloquent;
 use EduLazaro\Larameili\Tests\Fixtures\Chunk;
 use EduLazaro\Larameili\Tests\Fixtures\Law;
@@ -66,7 +66,7 @@ class RelationsTest extends TestCase
             new Chunk(['law_id' => 'BOE-1']),
         ]);
 
-        $loaded = (new MeilieQuery(Chunk::class))->with('law')->eagerLoad($chunks);
+        $loaded = (new MeiliQuery(Chunk::class))->with('law')->eagerLoad($chunks);
 
         $this->assertSame('Ley Uno', $loaded[0]->law->name);
         $this->assertSame('Ley Dos', $loaded[1]->law->name);

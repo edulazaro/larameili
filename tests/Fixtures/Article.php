@@ -2,9 +2,9 @@
 
 namespace EduLazaro\Larameili\Tests\Fixtures;
 
-use EduLazaro\Larameili\Meilie;
+use EduLazaro\Larameili\Meili;
 
-class Article extends Meilie
+class Article extends Meili
 {
     protected static string $index = 'articles';
 

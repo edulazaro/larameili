@@ -2,9 +2,9 @@
 
 namespace {{ namespace }};
 
-use EduLazaro\Larameili\Meilie;
+use EduLazaro\Larameili\Meili;
 
-class {{ class }} extends Meilie
+class {{ class }} extends Meili
 {
     protected static string $index = '{{ index }}';
 
